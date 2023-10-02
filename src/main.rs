@@ -162,6 +162,7 @@ async fn run(args: Args) -> Result<()> {
         base_dir.clone(),
         args.verbose,
         pipes_map,
+        args.no_watch,
     )
     .await
     .map_err(|err| anyhow!("error spawning commands: {}", err))?;

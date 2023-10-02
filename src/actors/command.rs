@@ -112,6 +112,7 @@ pub struct CommandActor {
     env: Vec<(String, String)>,
     pipes: Vec<Pipe>,
     entrypoint: Option<String>,
+    no_watch: bool,
 }
 
 impl CommandActor {
@@ -122,6 +123,7 @@ impl CommandActor {
         base_dir: PathBuf,
         verbose: bool,
         pipes_map: HashMap<String, Vec<Pipe>>,
+        global_no_watch: bool,
     ) -> Result<Vec<Addr<CommandActor>>> {
         let mut shared_env = HashMap::from_iter(std::env::vars());
         shared_env.extend(lade_sdk::resolve(&config.env, &shared_env)?);
@@ -168,6 +170,8 @@ impl CommandActor {
                 env.into_iter().collect(),
                 task_pipes,
                 op.entrypoint.clone(),
+                // TODO: consider introducing per command no_watch config
+                global_no_watch,
             )
             .start();
 
@@ -192,6 +196,7 @@ impl CommandActor {
         env: Vec<(String, String)>,
         pipes: Vec<Pipe>,
         entrypoint: Option<String>,
+        no_watch: bool,
     ) -> Self {
         Self {
             op_name,
@@ -209,6 +214,7 @@ impl CommandActor {
             env,
             pipes,
             entrypoint,
+            no_watch,
         }
     }
 
@@ -416,7 +422,7 @@ impl Actor for CommandActor {
 
         let watches = self.operator.watch.resolve();
 
-        if !watches.is_empty() {
+        if !self.no_watch && !watches.is_empty() {
             let mut on = GlobSetBuilder::new();
             for pattern in self.operator.watch.resolve() {
                 on.add(
@@ -517,7 +523,7 @@ impl Handler<Reload> for CommandActor {
                 self.send_will_reload();
             }
             Reload::Watch(files) => {
-                self.log_info(format!("RELOAD: files {} changed", files));
+                self.log_info(format!("RELOAD: file changed: {files} "));
                 self.send_will_reload();
             }
             Reload::Op(op_name) => {
