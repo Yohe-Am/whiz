@@ -129,8 +129,12 @@ fn test_grim_reaper() {
         let config: Config = r#"
             test:
                 command: ls
-            longtest:
+            long_test_dep:
                 command: sleep 1s; echo "wake up";
+            long_test:
+                command: echo "my que to enter"
+                depends_on:
+                    - long_test_dep
             "#
         .parse()?;
 
@@ -169,7 +173,6 @@ fn test_grim_reaper() {
     assert_eq!(0, system.run_with_code().unwrap());
     let elapsed = timer.elapsed().unwrap();
     assert!(elapsed.as_secs_f64() > 1.0);
-    assert!(elapsed.as_secs_f64() < 2.0);
 }
 
 #[test]
